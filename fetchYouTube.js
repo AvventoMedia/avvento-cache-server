@@ -4,8 +4,7 @@ const PlaylistItem = require('./models/PlaylistItem');
 // Firebase Admin Setup
 const admin = require('firebase-admin');
 
-const serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT); // Path to your JSON key
-
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT); // Load from env variable
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
