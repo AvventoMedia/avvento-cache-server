@@ -9,6 +9,7 @@ const PlaylistSchema = new mongoose.Schema({
   channelTitle: String,      // YouTube channel title
   channelName: String,     // YouTube channel name
   itemCount: Number,         // Number of videos in playlist
+  lastUpdated: { type: Date, default: new Date(0) },
 });
 
 // Export model to use in other files

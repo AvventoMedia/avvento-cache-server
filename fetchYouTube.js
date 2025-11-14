@@ -60,6 +60,11 @@ async function fetchPlaylists(apiKey, channelId, channelName) {
       playlist.snippet.thumbnails?.high?.url ||
       '';
 
+            // Find existing playlist in DB
+      const existingPlaylist = await Playlist.findOne({ id: playlist.id });
+
+      const lastUpdated = existingPlaylist?.lastUpdated || new Date(0);
+
       await Playlist.updateOne({ id: playlist.id }, {
         id: playlist.id,
         title: playlist.snippet.title,
@@ -89,8 +94,11 @@ async function fetchPlaylists(apiKey, channelId, channelName) {
         }, { merge: true });
 
 
-      // Fetch videos for each playlist
-      await fetchPlaylistItems(apiKey, playlist.id, channelName, playlist.snippet.channelTitle);
+      // Fetch only new videos after lastUpdated
+      await fetchPlaylistItems(apiKey, playlist.id, channelName, playlist.snippet.channelTitle, lastUpdated);
+
+      // Update lastUpdated
+      await Playlist.updateOne({ id: playlist.id }, { lastUpdated: new Date() });
     }
 
     nextPageToken = data.nextPageToken; // Update token for next page
@@ -100,7 +108,7 @@ async function fetchPlaylists(apiKey, channelId, channelName) {
 /**
  * Fetch all videos in a playlist (pagination supported)
  */
-async function fetchPlaylistItems(apiKey, playlistId, channelName, channelTitle) {
+async function fetchPlaylistItems(apiKey, playlistId, channelName, channelTitle, lastUpdated) {
   let nextPageToken = '';
 
   do {
@@ -110,6 +118,10 @@ async function fetchPlaylistItems(apiKey, playlistId, channelName, channelTitle)
 
     for (const item of data.items || []) {
       if (item.snippet.title === 'Private video') continue;
+
+      const publishedAt = new Date(item.snippet.publishedAt);
+      if (publishedAt <= lastUpdated) continue; // skip old videos
+
       const videoId = item.snippet.resourceId?.videoId || item.id;
 
       // Fetch video details (duration, views, live status)
