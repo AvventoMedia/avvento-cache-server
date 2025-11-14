@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "avventoradioflutter",
+  "private_key_id": "a439dd672f2e40552532ffa5af05b964694b2aba",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC7HDp9JTkRbYMo\nKiNms455mAvq7yUIB698/RVSif3WUtdnKlPMUaDIz54URLHuddG331YG6ahzHtsP\ntFM6Mhwdj765amhulPUltSSPX+rmIAzYI/tRaynFb3LERs5VanRzO4rylWDSurNg\nA0u0UXSQ324RGqPZph5IORi7XE/fEEjCBK0lWaz0wzQv2MKUjOlpjsVuG/BdKgi7\nkvrYkaLYi5SZD9m1Wqi0968lzwzL/bPh8hPi6mDUXAuQno2Y3fvmBeh8vj4H7X70\n+3XIYE3YgzXtULEqSQscHbN6A/ffsTYFZDh/vGKbCnfd4MFKkWB1uWPOFzgh/iz1\nOJrHfcbjAgMBAAECggEAEdb0qqboZIV8+lDeNDYNcQFyrXEkpjnZXQDiTg7TEWKv\nn+n0uGfV/R9ycntEPbilCLN2B82yXluERmCKiONrM9RXOmVvVI/GOdSmCjd6dXt7\nzgXMOeyOPIFOP3GCzbkLJkt4iX19kEn1vUNDLguQIhnzbBUOpztD6t3qwj5gbSN+\nE6jOAeiBZDGJlEgQL+Xj7EVSimIr9mhMsZ9iI6LekHHYQj8IRLE9H4e7TouIwNCL\n7t7DM1TDPoPeCjQo1aNXIxNK5grND7751DM/EblU9KO9aramr3fW0cm9gLfMv/Jk\nmsflBXi4jB69Bq1W76LIq0e5Zt5e5nALBCPC1bwdgQKBgQDhdsfEAT0VYj3adwSZ\nFn5eJB5epICrlV+v5vx0rrDruHNjC93DL/wTxCeacbuaVBWHBnvR2o1AQbh/vLAF\nLym4dhjumJQlF1Akjhb7fYuCWIP8eyjYn55DY49V4uqzekzmswDPl9dKGWgEoH+M\nc2//oIpHHmONfSbQJhj5itneYwKBgQDUc6jWweLP9YxDYV9wuFVOZ2napEt3O0YN\nHxFnAVZ5k2hndtBvj0irpb3V4qUKrXE1i9l75hLTStWrqJPYNb9LJJsEXab9XYLN\nNnFM62AlfcwM/t0e/AJXZZw40k7l45fzQWgG6Vbjf3jRngM3i50tNUh8Q+DoIILS\nu7aF1AadgQKBgCBAnJ0GTFWlwxFgWzEHDbar1ghV4e4ppRGFqnGKl9ZwgVkW1ndY\ngufU9JFcWajfBGFXZRkE+ZXKkPj85fUn5QD1K+Xdv7t6lUVVaiY5tF5GCUNx3sr2\nMm6TbGqt1kMsaJnL237Wyr5X2hBnYTeXP9tCfOVljHouAAJgoMv5t+bfAoGAerio\n4g0zmI8ty8pWmEVSuayRAASBt0kdCP1WTxr9udLFr2Z5tsec4dIm24NFdOqFh7nW\nEnTvkPAch0EkzfMWIjDt/tKeYKMAqMv3HMimTGHjWeprDrfiHlwKpuQNQUx7/L9e\neQeW8mkzAFr3XsGeNHwf9/A53bzR9SsLnzi/7YECgYAc2sUa38+aRLO49mqFszPI\nSDKQmPOV3vVXCDT8lZQEKGHrBopqNqeqeVtjPwcj+zGQrlvzOIYWQvvNNczdKRmT\nH6nRMUwaL4SSLqHP+sGIX08okzHv3oYEf6tgaOo587SvqqQhFKfFsAipp7Xg8bvF\nElAqb3BIrN1PB7sk4yxt+Q==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-99w13@avventoradioflutter.iam.gserviceaccount.com",
+  "client_id": "110449790755553863308",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-99w13%40avventoradioflutter.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
