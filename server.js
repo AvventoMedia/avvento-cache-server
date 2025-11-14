@@ -71,15 +71,6 @@ app.get('/playlistItems', async (req, res) => {
   }
 });
 
-(async () => {
-  console.log('Fetching YouTube data for the first time...');
-  for (const ch of channels) {
-    await fetchPlaylists(ch.apiKey, ch.id, ch.name);
-  }
-  console.log('Initial fetch finished!');
-})();
-
-
 // Cron job: run every 6 hours
 cron.schedule('0 */6 * * *', async () => {
   console.log('Updating YouTube data...');
