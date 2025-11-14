@@ -20,3 +20,6 @@ Thumbs.db
 
 # Build outputs
 dist/
+
+# firebase
+firebase/
