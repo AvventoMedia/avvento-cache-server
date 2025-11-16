@@ -47,14 +47,14 @@ app.get('/video/:videoId', async (req, res) => {
 });
 
 // Fetch from YouTube -> MongoDB -> Firestore (initial)
-(async () => {
-  console.log('Fetching YouTube data for the first time...');
-  for (const ch of channels) {
-    await fetchPlaylists(ch.apiKey, ch.id, ch.name);
-    await syncUpdatedMongoPlaylistsToFirestore(ch.name); // Sync Mongo -> Firestore
-  }
-  console.log('Initial fetch finished!');
-})();
+// (async () => {
+//   console.log('Fetching YouTube data for the first time...');
+//   for (const ch of channels) {
+//     await fetchPlaylists(ch.apiKey, ch.id, ch.name);
+//     await syncUpdatedMongoPlaylistsToFirestore(ch.name); // Sync Mongo -> Firestore
+//   }
+//   console.log('Initial fetch finished!');
+// })();
 
 // Cron: update every 3 hours
 cron.schedule('0 */3 * * *', async () => {
