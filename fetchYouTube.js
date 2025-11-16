@@ -113,7 +113,7 @@ async function fetchPlaylists(apiKey, channelId, channelName) {
 
       const existingPlaylist = await Playlist.findOne({ id: playlist.id });
       const lastUpdated = existingPlaylist?.lastUpdated || new Date(0);
-      const latestPublishedAt = existingPlaylist?.latestPublishedAt ? new Date(existingPlaylist.latestPublishedAt) : new Date(0);
+      const latestPublishedAt = existingPlaylist?.latestPublishedAt ? existingPlaylist.latestPublishedAt || playlist.snippet.publishedAt : new Date(playlist.snippet.publishedAt);
 
       // If playlist hasn't changed since last fetch, skip fetching items
       if (existingPlaylist && new Date(playlist.snippet.publishedAt) <= lastUpdated) {
@@ -133,6 +133,7 @@ async function fetchPlaylists(apiKey, channelId, channelName) {
           channelTitle: playlist.snippet.channelTitle,
           channelName,
           itemCount: playlist.contentDetails.itemCount,
+          latestPublishedAt,
         },
         { upsert: true }
       );
@@ -217,7 +218,7 @@ async function fetchPlaylistItems(apiKey, playlistId, channelName, channelTitle,
   // Update latestPublishedAt
   if (newestPublishedAt > lastPublishedAt) {
     await Playlist.updateOne({ id: playlistId }, { latestPublishedAt: newestPublishedAt });
-    console.log(`Updated latestPublishedAt for playlist ${playlistTitle}: ${playlistId}: ${newestPublishedAt} from ${channelName} channel to MongoDB`);
+    console.log(`Updated latestPublishedAt for playlist ${playlistTitle}: ${playlistId}: ${lastPublishedAt} from ${channelName} channel to MongoDB`);
   }
 
   // ✅ Update itemCount after all items are processed
