@@ -80,16 +80,17 @@ async function syncUpdatedMongoPlaylistsToFirestore(channelName) {
     }
 
     // Sync only new items
-    const items = await PlaylistItem.find({ playlistId: playlist.id, publishedAt: { $gt: playlist.latestPublishedAt || new Date(0) } });
+    const items = await PlaylistItem.find({ playlistId: playlist.id, publishedAt: { $gt: playlist.lastSyncedAt || new Date(0) } });
 
     for (const item of items) {
       const itemData = itemToFirestore(item);
       await playlistDocRef.collection('items').doc(item.id).set(itemData, { merge: true });
       console.log(`Updated item ${item.id} in Firestore`);
     }
+    // After syncing ALL new items
+    await Playlist.updateOne({ id: playlist.id },{ lastSyncedAt: new Date() });
+    console.log(`Playlist ${playlist.title} synced successfully.`);
   }
-
-  console.log(`Incremental sync completed for channel ${channelName}`);
 }
 
 
@@ -97,10 +98,9 @@ async function syncUpdatedMongoPlaylistsToFirestore(channelName) {
  * Fetch playlists from YouTube and update MongoDB only
  */
 async function fetchPlaylists(apiKey, channelId, channelName) {
-  let nextPageToken = '';
 
-  do {
-    const url = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&channelId=${channelId}&maxResults=50${nextPageToken ? `&pageToken=${nextPageToken}` : ''}&key=${apiKey}`;
+    // Fetch ONLY one page (last 50 playlists)
+  const url = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&channelId=${channelId}&maxResults=50&key=${apiKey}`;
     const res = await fetch(url);
     const data = await res.json();
 
@@ -144,9 +144,6 @@ async function fetchPlaylists(apiKey, channelId, channelName) {
       // Update lastUpdated
       await Playlist.updateOne({ id: playlist.id }, { lastUpdated: new Date() });
     }
-
-    nextPageToken = data.nextPageToken;
-  } while (nextPageToken);
 }
 
 /**
