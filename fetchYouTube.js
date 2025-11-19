@@ -11,6 +11,19 @@ if (!admin.apps.length) {
 }
 const firestore = admin.firestore();
 
+const FORCE_PLAYLISTS = [
+  {
+    id: "PLpAaM9NDy5RuQwQon3qjSbL0gXU2AWFXH",
+    channelName: "AvventoProductions",
+    playlistTitle: "Julira Mukama"
+  },
+  {
+    id: "PLpAaM9NDy5Rurk9LLOJUk0zWlfo9ZUSzg",
+    channelName: "AvventoProductions",
+    playlistTitle: "Bayibuli Egambaki"
+  }
+];
+
 // Convert MongoDB playlist document to Firestore-safe object
 function playlistToFirestore(playlist) {
   const { _id, __v, ...data } = playlist.toObject(); // remove _id & __v
@@ -64,6 +77,8 @@ async function syncUpdatedMongoPlaylistsToFirestore(channelName) {
   for (const playlist of playlists) {
     const playlistData = playlistToFirestore(playlist);
 
+     playlistData.itemCount = playlist.itemCount;
+     
     // Firestore document reference
     const playlistDocRef = firestore
       .collection('playlists')
@@ -73,18 +88,17 @@ async function syncUpdatedMongoPlaylistsToFirestore(channelName) {
 
     // Check if Firestore already has this playlist
     const doc = await playlistDocRef.get();
-    // Only update if Firestore missing or MongoDB has newer info
-    if (!doc.exists || (playlist.latestPublishedAt && new Date(playlist.latestPublishedAt) > new Date(doc.data().latestPublishedAt || 0))) {
-      await playlistDocRef.set(playlistData, { merge: true });
-      console.log(`Updated playlist ${playlist.title}: ${playlist.id} in Firestore`);
-    }
+
+    // Always merge playlist metadata (title, thumbnail, itemCount, etc.)
+    await playlistDocRef.set(playlistData, { merge: true });
 
     // Sync only new items
-    const items = await PlaylistItem.find({ playlistId: playlist.id, publishedAt: { $gt: playlist.lastSyncedAt || new Date(0) } });
+    const items = await PlaylistItem.find({ playlistId: playlist.id});
 
     for (const item of items) {
       const itemData = itemToFirestore(item);
-      await playlistDocRef.collection('items').doc(item.id).set(itemData, { merge: true });
+        // Overwrite item completely so metadata stays fresh
+        await playlistDocRef.collection('items').doc(item.id).set(itemData);
       console.log(`Updated item ${item.id} in Firestore`);
     }
     // After syncing ALL new items
@@ -93,6 +107,15 @@ async function syncUpdatedMongoPlaylistsToFirestore(channelName) {
   }
 }
 
+/**
+ * Fetch playlist metadata by ID
+ */
+async function fetchPlaylistById(apiKey, playlistId) {
+  const url = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=${playlistId}&key=${apiKey}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return data.items?.[0] || null;
+}
 
 /**
  * Fetch playlists from YouTube and update MongoDB only
@@ -104,46 +127,78 @@ async function fetchPlaylists(apiKey, channelId, channelName) {
     const res = await fetch(url);
     const data = await res.json();
 
+    const fetchedIds = new Set();
+
     for (const playlist of data.items || []) {
-      const playlistThumbnail =
-        playlist.snippet.thumbnails?.maxres?.url ||
-        playlist.snippet.thumbnails?.standard?.url ||
-        playlist.snippet.thumbnails?.high?.url ||
-        '';
-
-      const existingPlaylist = await Playlist.findOne({ id: playlist.id });
-      const lastUpdated = existingPlaylist?.lastUpdated || new Date(0);
-      const latestPublishedAt = existingPlaylist?.latestPublishedAt ? existingPlaylist.latestPublishedAt || playlist.snippet.publishedAt : new Date(playlist.snippet.publishedAt);
-
-      // If playlist hasn't changed since last fetch, skip fetching items
-      if (existingPlaylist && new Date(playlist.snippet.publishedAt) <= lastUpdated) {
-        console.log(`No updates for playlist ${playlist.snippet.title}, skipping fetching items.`);
-        continue; // skip to next playlist
-      }
-
-      // MongoDB: Upsert playlist
-      await Playlist.updateOne(
-        { id: playlist.id },
-        {
-          id: playlist.id,
-          title: playlist.snippet.title,
-          description: playlist.snippet.description,
-          publishedAt: new Date(playlist.snippet.publishedAt),
-          thumbnailUrl: playlistThumbnail,
-          channelTitle: playlist.snippet.channelTitle,
-          channelName,
-          itemCount: playlist.contentDetails.itemCount,
-          latestPublishedAt,
-        },
-        { upsert: true }
-      );
-
-      // Fetch new videos only
-      await fetchPlaylistItems(apiKey, playlist.id, channelName, playlist.snippet.channelTitle, latestPublishedAt, playlist.snippet.title);
-
-      // Update lastUpdated
-      await Playlist.updateOne({ id: playlist.id }, { lastUpdated: new Date() });
+      fetchedIds.add(playlist.id);
+      await processPlaylist(apiKey, playlist, channelName);
     }
+
+
+  // FORCE PLAYLISTS (with their own channelName mapping)
+  for (const forced of FORCE_PLAYLISTS) {
+    if (fetchedIds.has(forced.id)) continue;
+
+    console.log(`⚠️ Force-fetching ${forced.id} for channel ${forced.channelName}`);
+
+    const playlist = await fetchPlaylistById(apiKey, forced.id);
+
+    if (playlist) {
+      await processPlaylist(apiKey, playlist, forced.channelName);
+    }
+  }
+}
+
+/**
+ * Save playlist + fetch items
+ */
+async function processPlaylist(apiKey, playlist, channelName) {
+  const playlistThumbnail =
+    playlist.snippet.thumbnails?.maxres?.url ||
+    playlist.snippet.thumbnails?.standard?.url ||
+    playlist.snippet.thumbnails?.high?.url || "";
+
+  const existing = await Playlist.findOne({ id: playlist.id });
+
+  const lastUpdated = existing?.lastUpdated || new Date(0);
+  const latestPublishedAt = existing?.latestPublishedAt
+    ? existing.latestPublishedAt
+    : new Date(playlist.snippet.publishedAt);
+
+  // Prevents wrong channel mixing
+  // -------------------------------
+  if (existing && existing.channelName !== channelName) {
+    console.log(`⚠️ Correcting playlist owner → ${channelName}`);
+  }
+  // -------------------------------
+
+  // MongoDB: Upsert playlist
+  await Playlist.updateOne(
+    { id: playlist.id },
+    {
+      id: playlist.id,
+      title: playlist.snippet.title,
+      description: playlist.snippet.description,
+      publishedAt: new Date(playlist.snippet.publishedAt),
+      thumbnailUrl: playlistThumbnail,
+      channelTitle: playlist.snippet.channelTitle,
+      channelName,
+      itemCount: playlist.contentDetails.itemCount,
+      latestPublishedAt,
+    },
+    { upsert: true }
+  );
+
+  // Fetch videos
+  await fetchPlaylistItems(apiKey,
+    playlist.id,
+    channelName,
+    playlist.snippet.channelTitle,
+    latestPublishedAt,
+    playlist.snippet.title
+  );
+
+  await Playlist.updateOne({ id: playlist.id }, { lastUpdated: new Date() });
 }
 
 /**
@@ -162,7 +217,7 @@ async function fetchPlaylistItems(apiKey, playlistId, channelName, channelTitle,
       if (item.snippet.title === 'Private video') continue;
 
       const publishedAt = new Date(item.snippet.publishedAt);
-      if (publishedAt <= lastPublishedAt) continue;
+      // Do NOT skip older videos — we want to refresh views & duration.
       if (publishedAt > newestPublishedAt) newestPublishedAt = publishedAt;
 
       const videoId = item.snippet.resourceId?.videoId || item.id;
@@ -185,8 +240,13 @@ async function fetchPlaylistItems(apiKey, playlistId, channelName, channelTitle,
       // Check MongoDB for existing video
       const existingVideo = await PlaylistItem.findOne({ id: videoId });
 
-       // Only update if new or views changed
-      if (!existingVideo || publishedAt > lastPublishedAt || existingVideo.views !== views) {
+      const hasChanges =
+      !existingVideo ||
+      existingVideo.views !== views ||
+      existingVideo.duration !== formatDuration(videoDetails.contentDetails.duration, videoDetails.snippet.liveBroadcastContent) ||
+      existingVideo.title !== item.snippet.title;
+
+      if (hasChanges) {
         // MongoDB: Upsert video
         await PlaylistItem.updateOne(
           { id: videoId },
