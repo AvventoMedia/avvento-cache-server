@@ -46,24 +46,43 @@ app.get('/video/:videoId', async (req, res) => {
   }
 });
 
-// Fetch from YouTube -> MongoDB -> Firestore (initial)
-// (async () => {
-//   console.log('Fetching YouTube data for the first time...');
-//   for (const ch of channels) {
-//     await fetchPlaylists(ch.apiKey, ch.id, ch.name);
-//     await syncUpdatedMongoPlaylistsToFirestore(ch.name); // Sync Mongo -> Firestore
-//   }
-//   console.log('Initial fetch finished!');
-// })();
+app.get('/sync', async (req, res) => {
+  console.log("Manually triggered sync");
+  await runFullYoutubeSync();
+  res.send("Sync completed");
+});
 
-// Cron: update every 3 hours
-cron.schedule('0 */3 * * *', async () => {
-  console.log('Updating YouTube data...');
+
+// Reusable sync function
+async function runFullYoutubeSync() {
+  console.log("🔄 Starting YouTube → MongoDB → Firestore sync...");
+
+  for (const ch of channels) {
+    try {
+      console.log(`➡️ Fetching playlists for: ${ch.name}`);
+      await fetchPlaylists(ch.apiKey, ch.id, ch.name);
+
+      console.log(`➡️ Syncing Mongo → Firestore for: ${ch.name}`);
+      await syncUpdatedMongoPlaylistsToFirestore(ch.name);
+
+      console.log(`✅ Completed: ${ch.name}`);
+    } catch (err) {
+      console.error(`❌ Error syncing ${ch.name}:`, err.message);
+    }
+  }
+
+  console.log("🎉 Full sync finished!");
+}
+
+
+// Fetch from YouTube -> MongoDB -> Firestore (initial)
+(async () => {
+  console.log('Fetching YouTube data for the first time...');
   for (const ch of channels) {
     await fetchPlaylists(ch.apiKey, ch.id, ch.name);
-    await syncUpdatedMongoPlaylistsToFirestore(ch.name);
+    await syncUpdatedMongoPlaylistsToFirestore(ch.name); // Sync Mongo -> Firestore
   }
-  console.log('Update finished!');
-});
+  console.log('Initial fetch finished!');
+})();
 
 app.listen(3000, () => console.log('Server running on port 3000'));
