@@ -3,7 +3,18 @@ const Playlist = require('./models/Playlist');
 const PlaylistItem = require('./models/PlaylistItem');
 const admin = require('firebase-admin');
 
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+const rawFirebaseEnv = process.env.FIREBASE_SERVICE_ACCOUNT || "";
+if (!rawFirebaseEnv) throw new Error("🚨 FIREBASE_SERVICE_ACCOUNT environment variable is completely empty or missing!");
+let serviceAccount;
+try {
+  if (rawFirebaseEnv.trim().startsWith('{')) {
+    serviceAccount = JSON.parse(rawFirebaseEnv);
+  } else {
+    serviceAccount = JSON.parse(Buffer.from(rawFirebaseEnv, 'base64').toString('utf8'));
+  }
+} catch (e) {
+  throw new Error(`🚨 FIREBASE_SERVICE_ACCOUNT exists but contains invalid JSON. Length: ${rawFirebaseEnv.length}`);
+}
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
