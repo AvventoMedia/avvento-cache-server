@@ -1,0 +1,37 @@
+name: YouTube to Firestore Sync
+
+on:
+  schedule:
+    # Runs at minute 0 past every 3rd hour
+    - cron: '0 */3 * * *'
+  # Allows you to run this workflow manually from the Actions tab!
+  workflow_dispatch:
+
+jobs:
+  sync_data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Sync
+        run: node sync.js
+        env:
+          AVVENTOKIDS_APIKEY: ${{ secrets.AVVENTOKIDS_APIKEY }}
+          AVVENTOKIDS_YT_CHANNEL_ID: ${{ secrets.AVVENTOKIDS_YT_CHANNEL_ID }}
+          AVVENTOMUSIC_APIKEY: ${{ secrets.AVVENTOMUSIC_APIKEY }}
+          AVVENTOMUSIC_YT_CHANNEL_ID: ${{ secrets.AVVENTOMUSIC_YT_CHANNEL_ID }}
+          AVVENTOPRODUCTIONS_APIKEY: ${{ secrets.AVVENTOPRODUCTIONS_APIKEY }}
+          AVVENTOPRODUCTIONS_YT_CHANNEL_ID: ${{ secrets.AVVENTOPRODUCTIONS_YT_CHANNEL_ID }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
