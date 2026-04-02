@@ -12,6 +12,11 @@ try {
   } else {
     serviceAccount = JSON.parse(Buffer.from(rawFirebaseEnv, 'base64').toString('utf8'));
   }
+  
+  // Safely fix escaped newlines inside the private key so Firebase auth doesn't crash with 16 UNAUTHENTICATED
+  if (serviceAccount && serviceAccount.private_key) {
+    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+  }
 } catch (e) {
   throw new Error(`🚨 FIREBASE_SERVICE_ACCOUNT exists but contains invalid JSON. Length: ${rawFirebaseEnv.length}`);
 }
