@@ -40,18 +40,49 @@ function getHighlightType(channelName) {
   return 'Avvento'; // Fallback
 }
 
-function itemToFirestore(item) {
-  const { _id, __v, ...data } = item.toObject();
-  if (data.publishedAt instanceof Date) data.publishedAt = data.publishedAt.toISOString();
-  return data;
+function itemToYoutubeJson(item) {
+  const data = item.toObject ? item.toObject() : item;
+  return {
+    id: data.id,
+    snippet: {
+      title: data.title,
+      description: data.description || '',
+      channelTitle: data.channelTitle || '',
+      publishedAt: data.publishedAt instanceof Date ? data.publishedAt.toISOString() : data.publishedAt,
+      thumbnails: {
+        maxres: { url: data.thumbnailUrl }
+      },
+      resourceId: { videoId: data.id },
+      liveBroadcastContent: data.liveBroadcastContent || ''
+    },
+    contentDetails: {
+      duration: data.duration || ''
+    },
+    status: {
+      privacyStatus: data.privacyStatus || ''
+    },
+    statistics: {
+      viewCount: data.views?.toString() || ''
+    }
+  };
 }
 
-function playlistToFirestore(playlist) {
-  const { _id, __v, ...data } = playlist.toObject();
-  if (data.publishedAt instanceof Date) data.publishedAt = data.publishedAt.toISOString();
-  if (data.lastUpdated instanceof Date) data.lastUpdated = data.lastUpdated.toISOString();
-  if (data.latestPublishedAt instanceof Date) data.latestPublishedAt = data.latestPublishedAt.toISOString();
-  return data;
+function playlistToYoutubeJson(playlist) {
+  const data = playlist.toObject ? playlist.toObject() : playlist;
+  return {
+    id: data.id,
+    snippet: {
+      title: data.title,
+      description: data.description || '',
+      publishedAt: data.publishedAt instanceof Date ? data.publishedAt.toISOString() : data.publishedAt,
+      thumbnails: {
+        maxres: { url: data.thumbnailUrl }
+      }
+    },
+    contentDetails: {
+      itemCount: data.itemCount || 0
+    }
+  };
 }
 
 async function updateHighlights() {
@@ -59,19 +90,12 @@ async function updateHighlights() {
   
   const firestore = initializeFirebase();
 
-  // Find content strictly from the last 7 days
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  // Always pull the absolute latest 9 videos and 3 playlists
+  console.log(`➡️ Querying MongoDB for latest content...`);
 
-  console.log(`➡️ Querying MongoDB for content published after: ${sevenDaysAgo.toISOString()}`);
+  const recentVideos = await PlaylistItem.find().sort({ publishedAt: -1 }).limit(9);
 
-  const recentVideos = await PlaylistItem.find({
-    publishedAt: { $gte: sevenDaysAgo }
-  }).sort({ publishedAt: -1 }).limit(9);
-
-  const recentPlaylists = await Playlist.find({
-    publishedAt: { $gte: sevenDaysAgo }
-  }).sort({ publishedAt: -1 }).limit(3);
+  const recentPlaylists = await Playlist.find().sort({ publishedAt: -1 }).limit(3);
 
   const highlights = [];
   const catchyTitles = ["FEATURED", "NEW", "PREMIERE", "DON'T MISS", "MUST WATCH", "TRENDING"];
@@ -84,7 +108,7 @@ async function updateHighlights() {
       imageUrl: video.thumbnailUrl,
       type: getHighlightType(video.channelName),
       publishedAt: admin.firestore.Timestamp.fromDate(video.publishedAt),
-      youtubePlaylistItem: itemToFirestore(video),
+      youtubePlaylistItem: itemToYoutubeJson(video),
       youtubePlaylist: null,
       automated: true
     });
@@ -99,7 +123,7 @@ async function updateHighlights() {
       type: getHighlightType(playlist.channelName),
       publishedAt: admin.firestore.Timestamp.fromDate(playlist.publishedAt),
       youtubePlaylistItem: null,
-      youtubePlaylist: playlistToFirestore(playlist),
+      youtubePlaylist: playlistToYoutubeJson(playlist),
       automated: true
     });
   }
