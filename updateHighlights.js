@@ -93,7 +93,17 @@ async function updateHighlights() {
   // Always pull the absolute latest 9 videos and 3 playlists
   console.log(`➡️ Querying MongoDB for latest content...`);
 
-  const recentVideos = await PlaylistItem.find().sort({ publishedAt: -1 }).limit(9);
+  const allRecentVideos = await PlaylistItem.find().sort({ publishedAt: -1 }).limit(50);
+  
+  const recentVideos = [];
+  const seenPlaylistIds = new Set();
+  for (const video of allRecentVideos) {
+    if (!seenPlaylistIds.has(video.playlistId)) {
+      recentVideos.push(video);
+      seenPlaylistIds.add(video.playlistId);
+      if (recentVideos.length >= 9) break;
+    }
+  }
 
   const recentPlaylists = await Playlist.find().sort({ publishedAt: -1 }).limit(3);
 
