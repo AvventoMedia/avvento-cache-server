@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "sync-highlights": "node updateHighlights.js",
     "start": "node sync.js"
   },
   "keywords": [],
