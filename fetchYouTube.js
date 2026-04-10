@@ -108,13 +108,26 @@ async function syncUpdatedMongoPlaylistsToFirestore(channelName) {
     // Always merge playlist metadata (title, thumbnail, itemCount, etc.)
     await playlistDocRef.set(playlistData, { merge: true });
 
-    // Sync only new items
     const items = await PlaylistItem.find({ playlistId: playlist.id});
+    const mongoItemIds = new Set(items.map(item => item.id));
 
+    // Fetch existing items from Firestore
+    const firestoreItemsRef = playlistDocRef.collection('items');
+    const firestoreItemsSnapshot = await firestoreItemsRef.get();
+
+    // Delete items in Firestore that are no longer in MongoDB
+    for (const doc of firestoreItemsSnapshot.docs) {
+      if (!mongoItemIds.has(doc.id)) {
+        await firestoreItemsRef.doc(doc.id).delete();
+        console.log(`🗑️ Deleted removed item ${doc.id} from Firestore`);
+      }
+    }
+
+    // Sync only new/updated items
     for (const item of items) {
       const itemData = itemToFirestore(item);
-        // Overwrite item completely so metadata stays fresh
-        await playlistDocRef.collection('items').doc(item.id).set(itemData);
+      // Overwrite item completely so metadata stays fresh
+      await firestoreItemsRef.doc(item.id).set(itemData);
       console.log(`Updated item ${item.id} in Firestore`);
     }
     // After syncing ALL new items
@@ -223,6 +236,7 @@ async function processPlaylist(apiKey, playlist, channelName) {
 async function fetchPlaylistItems(apiKey, playlistId, channelName, channelTitle, lastPublishedAt, playlistTitle) {
   let nextPageToken = '';
   let newestPublishedAt = lastPublishedAt;
+  const fetchedVideoIds = new Set();
 
   do {
     const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,status&maxResults=50&playlistId=${playlistId}${nextPageToken ? `&pageToken=${nextPageToken}` : ''}&key=${apiKey}`;
@@ -230,13 +244,14 @@ async function fetchPlaylistItems(apiKey, playlistId, channelName, channelTitle,
     const data = await res.json();
 
     for (const item of data.items || []) {
-      if (item.snippet.title === 'Private video') continue;
+      if (item.snippet.title === 'Private video' || item.snippet.title === 'Deleted video') continue;
 
       const publishedAt = new Date(item.snippet.publishedAt);
       // Do NOT skip older videos — we want to refresh views & duration.
       if (publishedAt > newestPublishedAt) newestPublishedAt = publishedAt;
 
       const videoId = item.snippet.resourceId?.videoId || item.id;
+      fetchedVideoIds.add(videoId);
 
       // Fetch video details
       const videoRes = await fetch(
@@ -287,6 +302,15 @@ async function fetchPlaylistItems(apiKey, playlistId, channelName, channelTitle,
 
     nextPageToken = data.nextPageToken;
   } while (nextPageToken);
+
+  // Remove videos from MongoDB that are no longer in the playlist (e.g. made private/deleted/removed)
+  const deleteResult = await PlaylistItem.deleteMany({
+    playlistId: playlistId,
+    id: { $nin: Array.from(fetchedVideoIds) }
+  });
+  if (deleteResult.deletedCount > 0) {
+    console.log(`🗑️ Removed ${deleteResult.deletedCount} private/deleted/missing videos from playlist ${playlistTitle} in MongoDB`);
+  }
 
   // Update latestPublishedAt
   if (newestPublishedAt > lastPublishedAt) {
