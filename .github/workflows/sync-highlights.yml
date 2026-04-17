@@ -2,8 +2,8 @@ name: Generate Weekly Highlights
 
 on:
   schedule:
-    # Runs at 23:00 on Sunday
-    - cron: '0 23 * * 0'
+    # Runs at 23:00 every 3 days
+    - cron: '0 23 */3 * *'
   # Allows you to run this workflow manually from the Actions tab!
   workflow_dispatch:
 
