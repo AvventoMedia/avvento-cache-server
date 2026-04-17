@@ -60,9 +60,6 @@ function itemToYoutubeJson(item) {
     },
     status: {
       privacyStatus: data.privacyStatus || ''
-    },
-    statistics: {
-      viewCount: data.views?.toString() || ''
     }
   };
 }
