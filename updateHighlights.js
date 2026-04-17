@@ -40,6 +40,21 @@ function getHighlightType(channelName) {
   return 'Avvento'; // Fallback
 }
 
+function convertToYoutubeDuration(durationStr) {
+  if (!durationStr) return '';
+  if (durationStr.startsWith('P')) return durationStr;
+  
+  const parts = durationStr.split(':');
+  if (parts.length === 3) {
+    return `PT${parseInt(parts[0], 10)}H${parseInt(parts[1], 10)}M${parseInt(parts[2], 10)}S`;
+  } else if (parts.length === 2) {
+    return `PT${parseInt(parts[0], 10)}M${parseInt(parts[1], 10)}S`;
+  } else if (parts.length === 1) {
+    return `PT${parseInt(parts[0], 10)}S`;
+  }
+  return durationStr;
+}
+
 function itemToYoutubeJson(item) {
   const data = item.toObject ? item.toObject() : item;
   return {
@@ -56,7 +71,7 @@ function itemToYoutubeJson(item) {
       liveBroadcastContent: data.liveBroadcastContent || ''
     },
     contentDetails: {
-      duration: data.duration || ''
+      duration: convertToYoutubeDuration(data.duration)
     },
     status: {
       privacyStatus: data.privacyStatus || ''
