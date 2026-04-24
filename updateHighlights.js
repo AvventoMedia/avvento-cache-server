@@ -117,7 +117,7 @@ async function updateHighlights() {
     }
   }
 
-  const recentPlaylists = await Playlist.find().sort({ publishedAt: -1 }).limit(3);
+  const recentPlaylists = await Playlist.find({ itemCount: { $gt: 0 } }).sort({ publishedAt: -1 }).limit(3);
 
   const highlights = [];
   const catchyTitles = ["FEATURED", "NEW", "PREMIERE", "DON'T MISS", "MUST WATCH", "TRENDING"];
@@ -164,11 +164,27 @@ async function updateHighlights() {
   
   const batch = firestore.batch();
   let deletedCount = 0;
+  const deletedDocIds = new Set();
   for (const doc of oldHighlightsSnapshot.docs) {
     batch.delete(doc.ref);
+    deletedDocIds.add(doc.id);
     deletedCount++;
   }
-  console.log(`🗑️ Deleting ${deletedCount} previous automated highlights...`);
+
+  // Find and remove any non-automated highlights that are playlists with 0 items
+  const allHighlightsSnapshot = await highlightsCollection.get();
+  for (const doc of allHighlightsSnapshot.docs) {
+    if (deletedDocIds.has(doc.id)) continue;
+    
+    const data = doc.data();
+    if (data.youtubePlaylist && (!data.youtubePlaylist.contentDetails?.itemCount || data.youtubePlaylist.contentDetails?.itemCount === 0)) {
+      batch.delete(doc.ref);
+      deletedCount++;
+      console.log(`🗑️ Deleting empty playlist highlight: ${data.name || data.title}`);
+    }
+  }
+
+  console.log(`🗑️ Deleting ${deletedCount} highlights (automated & 0-item playlists)...`);
 
   // Insert new automated highlights
   let addedCount = 0;

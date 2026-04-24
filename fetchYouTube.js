@@ -91,29 +91,33 @@ async function syncUpdatedMongoPlaylistsToFirestore(channelName) {
   const playlists = await Playlist.find({ channelName });
 
   for (const playlist of playlists) {
-    const playlistData = playlistToFirestore(playlist);
-
-     playlistData.itemCount = playlist.itemCount;
-     
-    // Firestore document reference
     const playlistDocRef = firestore
       .collection('playlists')
       .doc(channelName)
       .collection('channel')
       .doc(playlist.id);
 
-    // Check if Firestore already has this playlist
-    const doc = await playlistDocRef.get();
+    const firestoreItemsRef = playlistDocRef.collection('items');
+    const firestoreItemsSnapshot = await firestoreItemsRef.get();
+
+    if (!playlist.itemCount || playlist.itemCount === 0) {
+      // 0 items: delete from Firestore if it exists
+      for (const doc of firestoreItemsSnapshot.docs) {
+        await firestoreItemsRef.doc(doc.id).delete();
+      }
+      await playlistDocRef.delete();
+      console.log(`🗑️ Deleted playlist with 0 items: ${playlist.title} from Firestore.`);
+      continue;
+    }
+
+    const playlistData = playlistToFirestore(playlist);
+    playlistData.itemCount = playlist.itemCount;
 
     // Always merge playlist metadata (title, thumbnail, itemCount, etc.)
     await playlistDocRef.set(playlistData, { merge: true });
 
     const items = await PlaylistItem.find({ playlistId: playlist.id});
     const mongoItemIds = new Set(items.map(item => item.id));
-
-    // Fetch existing items from Firestore
-    const firestoreItemsRef = playlistDocRef.collection('items');
-    const firestoreItemsSnapshot = await firestoreItemsRef.get();
 
     // Delete items in Firestore that are no longer in MongoDB
     for (const doc of firestoreItemsSnapshot.docs) {
