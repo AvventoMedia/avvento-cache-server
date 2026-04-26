@@ -100,7 +100,7 @@ async function syncUpdatedMongoPlaylistsToFirestore(channelName) {
     const firestoreItemsRef = playlistDocRef.collection('items');
     const firestoreItemsSnapshot = await firestoreItemsRef.get();
 
-    if (!playlist.itemCount || playlist.itemCount === 0) {
+    if (playlist.itemCount === 0 || playlist.itemCount === '0') {
       // 0 items: delete from Firestore if it exists
       for (const doc of firestoreItemsSnapshot.docs) {
         await firestoreItemsRef.doc(doc.id).delete();

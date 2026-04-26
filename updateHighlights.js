@@ -177,7 +177,7 @@ async function updateHighlights() {
     if (deletedDocIds.has(doc.id)) continue;
     
     const data = doc.data();
-    if (data.youtubePlaylist && (!data.youtubePlaylist.contentDetails?.itemCount || data.youtubePlaylist.contentDetails?.itemCount === 0)) {
+    if (data.youtubePlaylist && (data.youtubePlaylist.contentDetails?.itemCount === 0 || data.youtubePlaylist.contentDetails?.itemCount === "0")) {
       batch.delete(doc.ref);
       deletedCount++;
       console.log(`🗑️ Deleting empty playlist highlight: ${data.name || data.title}`);
