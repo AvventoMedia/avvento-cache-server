@@ -322,9 +322,34 @@ async function fetchPlaylistItems(apiKey, playlistId, channelName, channelTitle,
     console.log(`Updated latestPublishedAt for playlist ${playlistTitle}: ${playlistId}: ${lastPublishedAt} from ${channelName} channel to MongoDB`);
   }
 
-  // ✅ Update itemCount after all items are processed
+// ✅ Update itemCount after all items are processed
   const totalItems = await PlaylistItem.countDocuments({ playlistId });
   await Playlist.updateOne({ id: playlistId }, { itemCount: totalItems });
 }
 
-module.exports = { fetchPlaylists, syncUpdatedMongoPlaylistsToFirestore };
+/**
+ * Fetch channel statistics and securely push directly to Firestore
+ */
+async function syncChannelStatsToFirestore(channelName, apiKey, channelId) {
+  const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelId}&key=${apiKey}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  
+  if (data.items && data.items.length > 0) {
+    const stats = data.items[0].statistics;
+    
+    // Write directly to firestore
+    await firestore.collection('statistics').doc('youtube').set({
+      [channelName]: {
+        subscribers: stats.subscriberCount,
+        views: stats.viewCount,
+        videos: stats.videoCount,
+        updatedAt: new Date().toISOString()
+      }
+    }, { merge: true });
+    
+    console.log(`📊 Synced stats for ${channelName} to Firestore.`);
+  }
+}
+
+module.exports = { fetchPlaylists, syncUpdatedMongoPlaylistsToFirestore, syncChannelStatsToFirestore };

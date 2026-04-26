@@ -1,6 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const { fetchPlaylists, syncUpdatedMongoPlaylistsToFirestore } = require('./fetchYouTube');
+const { fetchPlaylists, syncUpdatedMongoPlaylistsToFirestore, syncChannelStatsToFirestore } = require('./fetchYouTube');
 
 const channels = [
   { name: 'AvventoKids', apiKey: process.env.AVVENTOKIDS_APIKEY, id: process.env.AVVENTOKIDS_YT_CHANNEL_ID },
@@ -18,6 +18,9 @@ async function runFullYoutubeSync() {
 
       console.log(`➡️ Syncing Mongo → Firestore for: ${ch.name}`);
       await syncUpdatedMongoPlaylistsToFirestore(ch.name);
+
+      console.log(`➡️ Syncing Stats to Firestore for: ${ch.name}`);
+      await syncChannelStatsToFirestore(ch.name, ch.apiKey, ch.id);
 
       console.log(`✅ Completed: ${ch.name}`);
     } catch (err) {
