@@ -5,7 +5,7 @@ const { fetchPlaylists, syncUpdatedMongoPlaylistsToFirestore, syncChannelStatsTo
 const channels = [
   { name: 'AvventoKids', apiKey: process.env.AVVENTOKIDS_APIKEY, id: process.env.AVVENTOKIDS_YT_CHANNEL_ID },
   { name: 'AvventoMusic', apiKey: process.env.AVVENTOMUSIC_APIKEY, id: process.env.AVVENTOMUSIC_YT_CHANNEL_ID },
-  { name: 'AvventoProductions', apiKey: process.env.AVVENTOPRODUCTIONS_APIKEY, id: process.env.AVVENTOPRODUCTIONS_YT_CHANNEL_ID },
+  { name: 'AvventoProductions', apiKey: process.env.AVVENTOKIDS_APIKEY, id: process.env.AVVENTOPRODUCTIONS_YT_CHANNEL_ID },
 ];
 
 async function runFullYoutubeSync() {
