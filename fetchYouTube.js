@@ -331,6 +331,11 @@ async function fetchPlaylistItems(apiKey, playlistId, channelName, channelTitle,
  * Fetch channel statistics and securely push directly to Firestore
  */
 async function syncChannelStatsToFirestore(channelName, apiKey, channelId) {
+  if (!apiKey || !channelId) {
+    console.error(`❌ Missing API Key or Channel ID for ${channelName}!`);
+    return;
+  }
+
   const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelId}&key=${apiKey}`;
   const res = await fetch(url);
   const data = await res.json();
@@ -349,6 +354,8 @@ async function syncChannelStatsToFirestore(channelName, apiKey, channelId) {
     }, { merge: true });
     
     console.log(`📊 Synced stats for ${channelName} to Firestore.`);
+  } else {
+    console.error(`❌ Failed to sync stats for ${channelName}. API returned:`, JSON.stringify(data, null, 2));
   }
 }
 
