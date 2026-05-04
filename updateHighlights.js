@@ -120,7 +120,11 @@ async function updateHighlights() {
   const recentPlaylists = await Playlist.find({ itemCount: { $gt: 0 } }).sort({ publishedAt: -1 }).limit(3);
 
   const highlights = [];
-  const catchyTitles = ["FEATURED", "NEW", "PREMIERE", "DON'T MISS", "MUST WATCH", "TRENDING"];
+  const catchyTitles = [
+    "FEATURED", "NEW", "PREMIERE", "DON'T MISS", "MUST WATCH", 
+    "TRENDING", "RECOMMENDED", "TOP PICK", "JUST IN", "POPULAR", 
+    "WATCH NOW", "LATEST", "ESSENTIAL", "EDITOR'S CHOICE"
+  ];
 
   for (const video of recentVideos) {
     const randomCatchyTitle = catchyTitles[Math.floor(Math.random() * catchyTitles.length)];
