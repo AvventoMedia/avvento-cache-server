@@ -250,11 +250,8 @@ async function fetchPlaylistItems(apiKey, playlistId, channelName, channelTitle,
     for (const item of data.items || []) {
       if (item.snippet.title === 'Private video' || item.snippet.title === 'Deleted video') continue;
 
-      const publishedAt = new Date(item.snippet.publishedAt);
       const videoId = item.snippet.resourceId?.videoId || item.id;
       fetchedVideoIds.add(videoId);
-
-      if (publishedAt > newestPublishedAt) newestPublishedAt = publishedAt;
 
       // Fetch video details
       const videoRes = await fetch(
@@ -263,6 +260,10 @@ async function fetchPlaylistItems(apiKey, playlistId, channelName, channelTitle,
       const videoData = await videoRes.json();
       const videoDetails = videoData.items?.[0];
       if (!videoDetails) continue;
+
+      const publishedAt = new Date(videoDetails.snippet.publishedAt);
+
+      if (publishedAt > newestPublishedAt) newestPublishedAt = publishedAt;
 
       const thumbnailUrl =
         item.snippet.thumbnails?.maxres?.url ||
