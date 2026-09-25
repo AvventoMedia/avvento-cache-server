@@ -239,7 +239,7 @@ async function processPlaylist(apiKey, playlist, channelName) {
  */
 async function fetchPlaylistItems(apiKey, playlistId, channelName, channelTitle, lastPublishedAt, playlistTitle) {
   let nextPageToken = '';
-  let newestPublishedAt = lastPublishedAt;
+  let newestPublishedAt = new Date(0);
   const fetchedVideoIds = new Set();
 
   do {
@@ -251,11 +251,10 @@ async function fetchPlaylistItems(apiKey, playlistId, channelName, channelTitle,
       if (item.snippet.title === 'Private video' || item.snippet.title === 'Deleted video') continue;
 
       const publishedAt = new Date(item.snippet.publishedAt);
-      // Do NOT skip older videos — we want to refresh views & duration.
-      if (publishedAt > newestPublishedAt) newestPublishedAt = publishedAt;
-
       const videoId = item.snippet.resourceId?.videoId || item.id;
       fetchedVideoIds.add(videoId);
+
+      if (publishedAt > newestPublishedAt) newestPublishedAt = publishedAt;
 
       // Fetch video details
       const videoRes = await fetch(
@@ -317,9 +316,9 @@ async function fetchPlaylistItems(apiKey, playlistId, channelName, channelTitle,
   }
 
   // Update latestPublishedAt
-  if (newestPublishedAt > lastPublishedAt) {
+  if (newestPublishedAt.getTime() > 0 && newestPublishedAt.getTime() !== lastPublishedAt.getTime()) {
     await Playlist.updateOne({ id: playlistId }, { latestPublishedAt: newestPublishedAt });
-    console.log(`Updated latestPublishedAt for playlist ${playlistTitle}: ${playlistId}: ${lastPublishedAt} from ${channelName} channel to MongoDB`);
+    console.log(`Updated latestPublishedAt for playlist ${playlistTitle}: ${playlistId} to ${newestPublishedAt.toISOString()} from ${channelName} channel to MongoDB`);
   }
 
 // ✅ Update itemCount after all items are processed

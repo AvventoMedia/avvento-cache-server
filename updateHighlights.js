@@ -117,7 +117,10 @@ async function updateHighlights() {
     }
   }
 
-  const recentPlaylists = await Playlist.find({ itemCount: { $gt: 0 } }).sort({ publishedAt: -1 }).limit(3);
+  const recentPlaylists = await Playlist.find({ 
+    id: { $nin: Array.from(seenPlaylistIds) },
+    itemCount: { $gt: 0 } 
+  }).sort({ publishedAt: -1 }).limit(3);
 
   const highlights = [];
   const catchyTitles = [

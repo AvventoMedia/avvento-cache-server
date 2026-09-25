@@ -26,3 +26,6 @@ dist/
 # firebase
 firebase/
 firebase/avvento-firebase-key.json
+
+# IDE
+.idea/
