@@ -110,6 +110,8 @@ function buildPresenters(files) {
       genre: mostCommon(list.map((f) => (f.genre || '').trim())),
       sermon_count: list.length,
       series_count: series.length,
+      // Newest upload (seconds); the app rings presenters with new sermons.
+      latest_at: Math.max(0, ...list.map((f) => f.uploaded_at || f.mtime || 0)),
       series,
       singles,
     });

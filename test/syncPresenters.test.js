@@ -36,6 +36,7 @@ test('groups presenters, series in part order and singles newest first', () => {
   assert.strictEqual(okello.series_count, 1);
   assert.strictEqual(okello.genre, 'Prophecy');
   assert.strictEqual(okello.image, 'art-4'); // Newest file's art.
+  assert.strictEqual(okello.latest_at, 40);
 
   const series = okello.series[0];
   assert.strictEqual(series.title, 'Series');
