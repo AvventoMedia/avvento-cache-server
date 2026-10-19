@@ -10,13 +10,21 @@ A serverless background worker powered by GitHub Actions that fetches YouTube ch
 - **Serverless Architecture**: Runs automatically via GitHub Actions—100% free and requires no active API servers (unlike sleeping free-tier hosting).
 - **Incremental Updates**: Intelligently updates only new videos or changed views to minimize database writes.
 
-## Presenters
+## Radio: presenters and podcasts
 
-`syncPresenters.js` builds the app's presenters from the AzuraCast media library and writes them to the Firestore `presenters` collection (one document per presenter, with series and single sermons). It runs after the YouTube sync in `sync.yml` and needs the `AZURACAST_APIKEY` secret. Try it without writing:
+`.github/workflows/sync-radio.yml` runs every 3 hours (and on demand from Actions). It runs the tests, then:
+
+- `syncPresenters.js`: builds presenters from the AzuraCast media library into the Firestore `presenters` collection, one document per presenter with series and single sermons. Needs the `AZURACAST_APIKEY` secret.
+- `syncPodcasts.js`: copies AzuraCast podcasts into `podcasts`, one document per show, with episodes newest first in `podcasts/{id}/pages/{n}` (250 per page).
+
+Only changed documents are written, and removed ones are deleted. Try either without writing:
 
 ```bash
 node syncPresenters.js --dry-run
+node syncPodcasts.js --dry-run
 ```
+
+`.github/workflows/test.yml` runs `npm test` on pull requests and pushes to main.
 
 ## Project Structure
 

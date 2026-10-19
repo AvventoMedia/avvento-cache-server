@@ -38,9 +38,3 @@ jobs:
           AVVENTOPRODUCTIONS_YT_CHANNEL_ID: ${{ secrets.AVVENTOPRODUCTIONS_YT_CHANNEL_ID }}
           MONGO_URI: ${{ secrets.MONGO_URI }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-
-      - name: Sync presenters (AzuraCast → Firestore)
-        run: node syncPresenters.js
-        env:
-          AZURACAST_APIKEY: ${{ secrets.AZURACAST_APIKEY }}
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

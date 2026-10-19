@@ -4,9 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test test/syncPresenters.test.js",
+    "test": "node --test test/syncPresenters.test.js test/syncPodcasts.test.js",
     "sync-highlights": "node updateHighlights.js",
     "sync-presenters": "node syncPresenters.js",
+    "sync-podcasts": "node syncPodcasts.js",
     "start": "node sync.js"
   },
   "keywords": [],

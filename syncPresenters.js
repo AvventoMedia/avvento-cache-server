@@ -11,8 +11,9 @@ require('dotenv').config();
  * Usage: node syncPresenters.js [--dry-run]
  */
 
-const BASE_URL = (process.env.AZURACAST_BASE_URL || 'https://radio1.avventomedia.org').replace(/\/$/, '');
-const STATION = process.env.AZURACAST_STATION || 'avventoradio';
+const { azuracastGet } = require('./azuracast');
+const { syncDocs } = require('./firestoreSync');
+
 const COLLECTION = 'presenters';
 
 const PRESENTER = /^(Pr|Ev|Elder|Bro|Sis|Dr|Pastor)\.?\s+\S/;
@@ -116,38 +117,8 @@ function buildPresenters(files) {
   return presenters.sort((a, b) => b.sermon_count - a.sermon_count || a.name.localeCompare(b.name));
 }
 
-async function fetchFiles() {
-  const key = process.env.AZURACAST_APIKEY;
-  if (!key) throw new Error('🚨 AZURACAST_APIKEY is missing');
-  const res = await fetch(`${BASE_URL}/api/station/${STATION}/files`, {
-    headers: { 'X-API-Key': key.trim() },
-  });
-  if (!res.ok) throw new Error(`AzuraCast files: HTTP ${res.status}`);
-  return res.json();
-}
-
-/** Writes changed presenters and deletes ones that are gone. */
-async function writePresenters(firestore, presenters) {
-  const col = firestore.collection(COLLECTION);
-  const existing = new Map((await col.get()).docs.map((d) => [d.id, d.data()]));
-  let written = 0;
-  let deleted = 0;
-  const batch = firestore.batch();
-
-  for (const p of presenters) {
-    const old = existing.get(p.id);
-    existing.delete(p.id);
-    if (old && JSON.stringify({ ...old, updated_at: null }) === JSON.stringify({ ...p, updated_at: null })) continue;
-    batch.set(col.doc(p.id), { ...p, updated_at: Date.now() });
-    written++;
-  }
-  for (const id of existing.keys()) {
-    batch.delete(col.doc(id));
-    deleted++;
-  }
-  if (written || deleted) await batch.commit();
-  return { written, deleted };
-}
+/** The media library needs the API key. */
+const fetchFiles = () => azuracastGet('/files', { auth: true });
 
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
@@ -162,7 +133,9 @@ async function main() {
     return;
   }
   const { initializeFirebase } = require('./firebase');
-  const result = await writePresenters(initializeFirebase(), presenters);
+  const firestore = initializeFirebase();
+  const result = await syncDocs(firestore, firestore.collection(COLLECTION),
+    Object.fromEntries(presenters.map((p) => [p.id, p])));
   console.log(`✅ Firestore: ${result.written} written, ${result.deleted} deleted`);
 }
 
