@@ -1,37 +1,8 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const admin = require('firebase-admin');
+const { initializeFirebase, admin } = require('./firebase');
 const Playlist = require('./models/Playlist');
 const PlaylistItem = require('./models/PlaylistItem');
-
-function initializeFirebase() {
-  if (admin.apps.length) return admin.firestore();
-
-  const rawFirebaseEnv = process.env.FIREBASE_SERVICE_ACCOUNT || "";
-  if (!rawFirebaseEnv) throw new Error("🚨 FIREBASE_SERVICE_ACCOUNT environment variable is completely empty or missing!");
-  
-  let serviceAccount;
-  try {
-    if (rawFirebaseEnv.trim().startsWith('{')) {
-      serviceAccount = JSON.parse(rawFirebaseEnv);
-    } else {
-      serviceAccount = JSON.parse(Buffer.from(rawFirebaseEnv, 'base64').toString('utf8'));
-    }
-    
-    // Safely fix escaped newlines inside the private key so Firebase auth doesn't crash with 16 UNAUTHENTICATED
-    if (serviceAccount && serviceAccount.private_key) {
-      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-    }
-  } catch (e) {
-    throw new Error(`🚨 FIREBASE_SERVICE_ACCOUNT exists but contains invalid JSON. Length: ${rawFirebaseEnv.length}`);
-  }
-
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
-
-  return admin.firestore();
-}
 
 function getHighlightType(channelName) {
   if (channelName === 'AvventoMusic') return 'Music';
