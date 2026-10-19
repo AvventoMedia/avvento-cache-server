@@ -18,8 +18,16 @@ const { syncDocs } = require('./firestoreSync');
 const COLLECTION = 'podcasts';
 const PAGE_SIZE = 250;
 
-/** The fields RadioPodcast.fromJson reads. */
-function toPodcastDoc(p) {
+/** Newest publish time (epoch seconds) among AzuraCast episodes; 0 if none. */
+function latestEpisodeAt(episodes) {
+  return Math.max(0, ...episodes.map((e) => e.publish_at || 0));
+}
+
+/**
+ * The fields RadioPodcast.fromJson reads. `last_episode_at` lets the app put
+ * shows with a new episode first (art_updated_at only moves with the cover).
+ */
+function toPodcastDoc(p, lastEpisodeAt = 0) {
   return {
     id: p.id,
     title: p.title || '',
@@ -30,6 +38,7 @@ function toPodcastDoc(p) {
     episodes: p.episodes || 0,
     categories: p.categories || [],
     art_updated_at: p.art_updated_at || 0,
+    last_episode_at: lastEpisodeAt,
     links: { art: p.art || (p.links && p.links.art) || '', episodes: (p.links && p.links.episodes) || '' },
   };
 }
@@ -70,7 +79,10 @@ async function main() {
   for (const p of podcasts) {
     const episodes = await azuracastGet(`/public/podcast/${p.id}/episodes`);
     const pages = toPages(episodes);
-    shows.push({ doc: { ...toPodcastDoc(p), page_count: Object.keys(pages).length }, pages });
+    shows.push({
+      doc: { ...toPodcastDoc(p, latestEpisodeAt(episodes)), page_count: Object.keys(pages).length },
+      pages,
+    });
   }
   console.log(`🎧 ${shows.length} podcasts`);
   for (const s of shows) {
@@ -106,4 +118,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { toPodcastDoc, toEpisode, toPages, PAGE_SIZE };
+module.exports = { toPodcastDoc, latestEpisodeAt, toEpisode, toPages, PAGE_SIZE };

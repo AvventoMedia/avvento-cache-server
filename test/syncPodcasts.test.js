@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { toPodcastDoc, toEpisode, toPages, PAGE_SIZE } = require('../syncPodcasts');
+const { toPodcastDoc, latestEpisodeAt, toEpisode, toPages, PAGE_SIZE } = require('../syncPodcasts');
 
 const episode = (i) => ({
   id: `e${i}`, title: `Genesis ${i}`, description: 'd', publish_at: i, is_published: true,
@@ -13,11 +13,17 @@ test('show documents keep the fields the app reads', () => {
   const doc = toPodcastDoc({
     id: 'p', title: 'OT', author: 'A', episodes: 3, art: 'art', art_updated_at: 9,
     categories: [{ category: 'Religion' }], is_published: true, branding_config: {},
-  });
+  }, 1700000000);
   assert.deepStrictEqual(Object.keys(doc).sort(), [
     'art_updated_at', 'author', 'categories', 'description', 'email', 'episodes',
-    'id', 'is_published', 'links', 'title']);
+    'id', 'is_published', 'last_episode_at', 'links', 'title']);
   assert.strictEqual(doc.links.art, 'art');
+  assert.strictEqual(doc.last_episode_at, 1700000000);
+});
+
+test('last_episode_at is the newest episode, 0 without episodes', () => {
+  assert.strictEqual(latestEpisodeAt([{ publish_at: 5 }, { publish_at: 90 }, { publish_at: 7 }]), 90);
+  assert.strictEqual(latestEpisodeAt([]), 0);
 });
 
 test('episodes keep only what PodcastEpisode reads', () => {
