@@ -2,8 +2,8 @@ name: Radio (presenters & podcasts) to Firestore Sync
 
 on:
   schedule:
-    # Every 3 hours, half an hour after the YouTube sync
-    - cron: '30 */3 * * *'
+    # Every hour at :30, so it never starts with the YouTube sync (:00)
+    - cron: '30 * * * *'
   # Allows you to run this workflow manually from the Actions tab!
   workflow_dispatch:
 
